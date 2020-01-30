@@ -355,6 +355,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
 
         _ecall:
           li   $0, 0          // Mark that the process did a syscall.
+        _done:
           // Need to increment the PC so when we return we start at the correct
           // instruction. The hardware does not do this for us.
           lw   t0, 31*4(t6)   // Get the PC from RiscvimacStoredState
@@ -376,8 +377,6 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
           sw   t0, 4*4(t2)
           lw   $1, 1*4(t6)    // Fetch sp
 
-        _done:
-          nop
         "
           : "=r"(switch_reason), "=r"(new_stack_pointer)
           : "r"(state), "r"(&mut syscall_args)
