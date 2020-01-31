@@ -23,6 +23,17 @@ pub struct RiscvimacStoredState {
     mcause: usize,
 }
 
+// Named offsets into the stored state registers.  These needs to be kept in
+// sync with the register save logic in _start_trap() as well as the register
+// restore logic in switch_to_process() below.
+const R_RA: usize = 0;
+const R_SP: usize = 1;
+const R_A0: usize = 9;
+const R_A1: usize = 10;
+const R_A2: usize = 11;
+const R_A3: usize = 12;
+const R_A4: usize = 13;
+
 /// Implementation of the `UserspaceKernelBoundary` for the RISC-V architecture.
 pub struct SysCall(());
 
@@ -48,7 +59,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
 
         // The first time the process runs we need to set the initial stack
         // pointer in the sp register.
-        state.regs[1] = stack_pointer as usize;
+        state.regs[R_SP] = stack_pointer as usize;
 
         // Just return the stack pointer. For the RISC-V arch we do not need
         // to make a stack frame to start the process.
@@ -63,7 +74,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
     ) {
         // Just need to put the return value in the a0 register for when the
         // process resumes executing.
-        state.regs[9] = return_value as usize; // a0 = regs[9] = return value
+        state.regs[R_A0] = return_value as usize; // a0 = return value
     }
 
     unsafe fn set_process_function(
@@ -75,10 +86,10 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
     ) -> Result<*mut usize, *mut usize> {
         // Set the register state for the application when it starts
         // executing. These are the argument registers.
-        state.regs[9] = callback.argument0; // a0 = x10 = regs[9]
-        state.regs[10] = callback.argument1; // a1 = x11 = regs[10]
-        state.regs[11] = callback.argument2; // a2 = x12 = regs[11]
-        state.regs[12] = callback.argument3; // a3 = x13 = regs[12]
+        state.regs[R_A0] = callback.argument0;
+        state.regs[R_A1] = callback.argument1;
+        state.regs[R_A2] = callback.argument2;
+        state.regs[R_A3] = callback.argument3;
 
         // We also need to set the return address (ra) register so that the new
         // function that the process is running returns to the correct location.
@@ -86,7 +97,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
         // process is executing then `state.pc` is invalid/useless, but the
         // application must ignore it anyway since there is nothing logically
         // for it to return to. So this doesn't hurt anything.
-        state.regs[0] = state.pc; // ra = x1 = regs[0]
+        state.regs[R_RA] = state.pc;
 
         // Save the PC we expect to execute.
         state.pc = callback.pc;
@@ -328,11 +339,11 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
                         state.pc += 4;
 
                         let syscall = kernel::syscall::arguments_to_syscall(
-                            state.regs[9] as u8,
-                            state.regs[10],
-                            state.regs[11],
-                            state.regs[12],
-                            state.regs[13],
+                            state.regs[R_A0] as u8,
+                            state.regs[R_A1],
+                            state.regs[R_A2],
+                            state.regs[R_A3],
+                            state.regs[R_A4],
                         );
                         match syscall {
                             Some(s) => kernel::syscall::ContextSwitchReason::SyscallFired { syscall: s },
@@ -346,7 +357,7 @@ impl kernel::syscall::UserspaceKernelBoundary for SysCall {
                 }
             }
         };
-        let new_stack_pointer = state.regs[1];
+        let new_stack_pointer = state.regs[R_SP];
         (new_stack_pointer as *mut usize, ret)
     }
 
