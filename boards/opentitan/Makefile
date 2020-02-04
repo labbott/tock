@@ -6,4 +6,4 @@ PLATFORM=opentitan
 include ../Makefile.common
 
 flash: target/$(TARGET)/release/$(PLATFORM).bin
-	$(OPENTITAN_TREE)/sw/host/spiflash/spiflash --input=target/$(TARGET)/release/$(PLATFORM).bin
+	$(OPENTITAN_TREE)/build-bin/sw/host/spiflash/spiflash --input=target/$(TARGET)/release/$(PLATFORM).bin

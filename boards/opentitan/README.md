@@ -23,7 +23,8 @@ To use `make flash` you first need to clone the OpenTitan repo and build the `sp
 In the OpenTitan repo build the `spiflash` program.
 
 ```shell
-make -C sw/host/spiflash clean all
+./meson_init.sh
+ninja -C build-out/sw/fpga sw/host/spiflash/spiflash_export
 ```
 
 Export the `OPENTITAN_TREE` enviroment variable to point to the OpenTitan tree.
