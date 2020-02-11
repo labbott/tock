@@ -299,6 +299,7 @@ SECTIONS
          * dynamically, requiring changes to this section.
          */
         . = ALIGN(MPU_MIN_ALIGN);
+	start_app_memory = .;
         *(.app_memory)
     } > ram
 
